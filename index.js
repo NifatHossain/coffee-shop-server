@@ -23,10 +23,12 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const database = client.db("coffeeDB");
     const haiku = database.collection("haiku");
+
+    const userCollection= client.db("coffeeDB").collection("userCollection");
 
     app.get("/coffees", async (req, res) => {
       const cursor = haiku.find();
@@ -73,6 +75,37 @@ async function run() {
       const result = await haiku.deleteOne(query);
       res.send(result);
     });
+
+    //firebase
+    app.post('/user',async(req,res)=>{
+      const user= req.body;
+      console.log(user)
+      const result= await userCollection.insertOne(user);
+      res.send(result);
+    })
+    app.get('/users', async(req,res)=>{
+      const cursor = userCollection.find();
+      const result= await cursor.toArray();
+      res.send(result);
+    })
+    app.delete('/user/:id',async(req,res)=>{
+      const receivedId= req.params.id;
+      const query = { _id: new ObjectId(receivedId)};
+      const result = await userCollection.deleteOne(query);
+      res.send(result)
+    })
+    app.patch('/user', async(req,res)=>{
+      const receivedEmail= req.body.email;
+      const receivedLogInTime= req.body.logInAt;
+      const filter = { email: receivedEmail };
+      const updateDoc = {
+        $set: {
+          'last logIn': receivedLogInTime,
+        }
+      };
+      const result = await userCollection.updateOne(filter, updateDoc)
+      res.send(result);
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
